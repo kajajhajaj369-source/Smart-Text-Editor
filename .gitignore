@@ -1,0 +1,8 @@
+/build/
+cmake-build-*/
+*.exe
+*.obj
+*.o
+*.dll
+*.so
+*.dylib

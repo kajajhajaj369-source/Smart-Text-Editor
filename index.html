@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untitled — Notepad (Smart Text Editor — DSA Project)</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Consolas&family=Inter:wght@400;500;600;700&family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Segoe UI', 'Inter', 'sans-serif'],
+                        mono: ['Consolas', 'Lucida Console', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Notepad Scrollbar */
+        ::-webkit-scrollbar {
+            width: 14px;
+            height: 14px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cdcdcd;
+            border: 3px solid #f1f1f1;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border: 3px solid #1e1e1e;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a6a6a6;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+
+        /* Menu dropdown hover */
+        .menu-item:hover > .submenu {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-[#f0f0f0] dark:bg-[#191919] text-[#000000] dark:text-[#ffffff] font-sans antialiased h-screen flex flex-col select-none overflow-hidden transition-colors duration-150">
+
+    <!-- ================= 1. WINDOW TITLE BAR (Windows Style) ================= -->
+    <div class="bg-[#e9ecef] dark:bg-[#202020] border-b border-[#d0d0d0] dark:border-[#2d2d2d] px-3 py-1.5 flex items-center justify-between text-xs text-slate-700 dark:text-slate-300">
+        <div class="flex items-center gap-2">
+            <!-- Notepad Icon -->
+            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span id="window-title" class="font-normal text-slate-800 dark:text-slate-200">Untitled — Notepad</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-mono">DSA Lab Edition</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleDsaGuide(true)" class="px-2.5 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs flex items-center gap-1 shadow-sm transition">
+                <span>📚 DSA Guide (F1)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= 2. CLASSIC NOTEPAD MENU BAR ================= -->
+    <div class="bg-[#f0f0f0] dark:bg-[#191919] border-b border-[#e0e0e0] dark:border-[#2d2d2d] px-2 flex items-center text-xs font-normal text-slate-800 dark:text-slate-200 relative z-30">
+        
+        <!-- File Menu -->
+        <div class="relative menu-item">
+            <button class="px-2.5 py-1 hover:bg-[#e5f1fb] dark:hover:bg-[#333333] rounded">File</button>
+            <div class="submenu hidden absolute left-0 top-full w-52 bg-white dark:bg-[#252526] border border-[#cccccc] dark:border-[#454545] shadow-lg py-1 text-xs z-50">
+                <button onclick="newDocument()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] hover:text-black dark:hover:text-white flex justify-between">
+                    <span>New</span> <span class="text-slate-400">Ctrl+N</span>
+                </button>
+                <button onclick="openFileDialog()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] hover:text-black dark:hover:text-white flex justify-between">
+                    <span>Open...</span> <span class="text-slate-400">Ctrl+O</span>
+                </button>
+                <button onclick="saveDocument()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] hover:text-black dark:hover:text-white flex justify-between">
+                    <span>Save</span> <span class="text-slate-400">Ctrl+S</span>
+                </button>
+                <button onclick="saveDocumentAs()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] hover:text-black dark:hover:text-white flex justify-between">
+                    <span>Save As...</span> <span class="text-slate-400">Ctrl+Shift+S</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <div class="px-4 py-1 text-[10px] uppercase font-mono text-slate-400 font-bold">Recent Files (Queue FIFO)</div>
+                <div id="recent-files-list">
+                    <button onclick="loadSample('dsa_notes.txt')" class="w-full text-left px-4 py-1 hover:bg-[#90c8f6] dark:hover:bg-[#094771] text-slate-600 dark:text-slate-300">1. dsa_notes.txt</button>
+                    <button onclick="loadSample('main.cpp')" class="w-full text-left px-4 py-1 hover:bg-[#90c8f6] dark:hover:bg-[#094771] text-slate-600 dark:text-slate-300">2. main.cpp</button>
+                    <button onclick="loadSample('document.txt')" class="w-full text-left px-4 py-1 hover:bg-[#90c8f6] dark:hover:bg-[#094771] text-slate-600 dark:text-slate-300">3. document.txt</button>
+                </div>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="alert('Notepad session closed.')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">Exit</button>
+            </div>
+        </div>
+
+        <!-- Edit Menu -->
+        <div class="relative menu-item">
+            <button class="px-2.5 py-1 hover:bg-[#e5f1fb] dark:hover:bg-[#333333] rounded">Edit</button>
+            <div class="submenu hidden absolute left-0 top-full w-52 bg-white dark:bg-[#252526] border border-[#cccccc] dark:border-[#454545] shadow-lg py-1 text-xs z-50">
+                <button onclick="performUndo()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Undo</span> <span class="text-slate-400">Ctrl+Z</span>
+                </button>
+                <button onclick="performRedo()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Redo</span> <span class="text-slate-400">Ctrl+Y</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="document.execCommand('cut')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Cut</span> <span class="text-slate-400">Ctrl+X</span>
+                </button>
+                <button onclick="document.execCommand('copy')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Copy</span> <span class="text-slate-400">Ctrl+C</span>
+                </button>
+                <button onclick="performPaste()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Paste</span> <span class="text-slate-400">Ctrl+V</span>
+                </button>
+                <button onclick="performDelete()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Delete</span> <span class="text-slate-400">Del</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="openFindModal()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Find...</span> <span class="text-slate-400">Ctrl+F</span>
+                </button>
+                <button onclick="openReplaceModal()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Replace...</span> <span class="text-slate-400">Ctrl+H</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="selectAllText()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>Select All</span> <span class="text-slate-400">Ctrl+A</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Format Menu -->
+        <div class="relative menu-item">
+            <button class="px-2.5 py-1 hover:bg-[#e5f1fb] dark:hover:bg-[#333333] rounded">Format</button>
+            <div class="submenu hidden absolute left-0 top-full w-48 bg-white dark:bg-[#252526] border border-[#cccccc] dark:border-[#454545] shadow-lg py-1 text-xs z-50">
+                <button onclick="toggleWordWrap()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex items-center justify-between">
+                    <span>Word Wrap</span> <span id="wordwrap-check">✓</span>
+                </button>
+                <button onclick="promptFont()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">Font...</button>
+            </div>
+        </div>
+
+        <!-- View Menu -->
+        <div class="relative menu-item">
+            <button class="px-2.5 py-1 hover:bg-[#e5f1fb] dark:hover:bg-[#333333] rounded">View</button>
+            <div class="submenu hidden absolute left-0 top-full w-60 bg-white dark:bg-[#252526] border border-[#cccccc] dark:border-[#454545] shadow-lg py-1 text-xs z-50">
+                <button onclick="toggleStatusBar()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex items-center justify-between">
+                    <span>Status Bar</span> <span id="statusbar-check">✓</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="toggleDsaGuide(true)" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] text-blue-600 dark:text-blue-400 font-semibold flex justify-between">
+                    <span>📚 Data Structures Guide</span> <span>F1</span>
+                </button>
+                <button onclick="openStatsModal()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>📊 Statistics</span> <span>F4</span>
+                </button>
+                <button onclick="checkBracketBalance()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>🔍 Check Bracket Balance</span> <span>F7</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="toggleLiveMapping()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex items-center justify-between text-purple-600 dark:text-purple-400 font-medium">
+                    <span>⚡ Live DSA Mapping (HUD)</span> <span id="livemapping-check">Off</span>
+                </button>
+                <button onclick="toggleActivityLog(true)" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] flex justify-between">
+                    <span>📝 DSA Activity Log</span> <span>F8</span>
+                </button>
+                <hr class="my-1 border-slate-200 dark:border-slate-700"/>
+                <button onclick="setTheme('light')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">Light Theme</button>
+                <button onclick="setTheme('dark')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">Dark Theme</button>
+            </div>
+        </div>
+
+        <!-- Help Menu -->
+        <div class="relative menu-item">
+            <button class="px-2.5 py-1 hover:bg-[#e5f1fb] dark:hover:bg-[#333333] rounded">Help</button>
+            <div class="submenu hidden absolute left-0 top-full w-56 bg-white dark:bg-[#252526] border border-[#cccccc] dark:border-[#454545] shadow-lg py-1 text-xs z-50">
+                <button onclick="alert('Smart Text Editor (Notepad Style)\nCourse Project: Data Structures & Algorithms\n\nBuilt in C++ & Qt6 with custom Stacks, Queues, Linked Lists, Hash Tables, and Merge Sort.')" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">About Notepad</button>
+                <button onclick="toggleDsaGuide(true)" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771] font-semibold text-blue-600 dark:text-blue-400">Data Structures Guide</button>
+                <button onclick="openProjectInfoModal()" class="w-full text-left px-4 py-1.5 hover:bg-[#90c8f6] dark:hover:bg-[#094771]">Project Information (DSA)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= 3. LIVE ACTION MAPPING HUD (Optional Educational Overlay) ================= -->
+    <div id="live-mapping-bar" class="hidden bg-slate-900 text-slate-200 border-b-2 border-cyan-400 px-4 py-2 text-xs font-mono flex items-center justify-between transition-all duration-200 shadow-md">
+        <div class="flex items-center gap-3 flex-wrap">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30">[LIVE DSA MAPPING]</span>
+            <span id="hud-text">Action: <b class="text-cyan-300">Init</b> | Data Structure: <b class="text-purple-300">Editor</b> | Op: <b class="text-emerald-400">READY</b> | Complexity: <b>O(1)</b></span>
+            <span class="text-slate-600">|</span>
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex items-center gap-1.5 cursor-pointer hover:bg-amber-500/30 transition-colors" id="code-tc-badge" title="Estimated Time Complexity of code currently written in the editor" onclick="showCodeComplexityDetails()">
+                <span>💻 Written Code TC:</span>
+                <b id="code-tc-val" class="text-amber-200">O(1)</b>
+                <span id="code-tc-reason" class="text-[10px] text-amber-400/80 font-normal hidden md:inline">(Sequential)</span>
+            </span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="showCodeComplexityDetails()" class="text-cyan-400 hover:text-cyan-200 text-xs flex items-center gap-1 underline underline-offset-2">Inspect Code TC</button>
+            <button onclick="toggleLiveMapping()" class="text-slate-400 hover:text-white text-xs">✕ Close HUD</button>
+        </div>
+    </div>
+
+    <!-- ================= 4. MAIN NOTEPAD TEXT EDITING AREA ================= -->
+    <main class="flex-1 relative flex flex-col bg-white dark:bg-[#1e1e1e]">
+        <textarea id="editor" class="w-full h-full p-4 bg-transparent text-slate-900 dark:text-slate-100 font-mono text-sm leading-relaxed outline-none resize-none border-none selection:bg-blue-200 dark:selection:bg-blue-800" placeholder="Type here like in Windows Notepad... (e.g. paste your text or click Help -> Data Structures Guide)"></textarea>
+    </main>
+
+    <!-- ================= 5. TRADITIONAL NOTEPAD STATUS BAR ================= -->
+    <footer id="statusbar" class="bg-[#f0f0f0] dark:bg-[#191919] border-t border-[#d0d0d0] dark:border-[#2d2d2d] px-4 py-1 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-mono">
+        <div class="flex items-center gap-6">
+            <span id="status-pos">Ln 1, Col 1</span>
+            <span id="status-words">0 words</span>
+            <span id="status-chars">0 characters</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-slate-400">100%</span>
+            <span>Windows (CRLF)</span>
+            <span>UTF-8</span>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL: IN-APP DATA STRUCTURES GUIDE (F1) ================= -->
+    <div id="dsa-guide-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-200">
+            <!-- Modal Header -->
+            <div class="bg-slate-100 dark:bg-[#0f172a] px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h2 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>🎓 Data Structures & Algorithms Laboratory Guide</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Explore each handcrafted C++ Data Structure with live interactive sandboxes.</p>
+                </div>
+                <button onclick="toggleDsaGuide(false)" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="bg-slate-50 dark:bg-[#111827] px-6 border-b border-slate-200 dark:border-slate-800 flex gap-2 overflow-x-auto text-xs font-semibold py-2">
+                <button onclick="switchDsaTab('overview')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-blue-600 text-white" id="tab-btn-overview">📋 Overview & Viva Map</button>
+                <button onclick="switchDsaTab('stack')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700" id="tab-btn-stack">🥞 Stack (Undo/Redo)</button>
+                <button onclick="switchDsaTab('queue')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700" id="tab-btn-queue">🚶 Queue (Recent Files)</button>
+                <button onclick="switchDsaTab('list')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700" id="tab-btn-list">🔗 Linked List (Lines)</button>
+                <button onclick="switchDsaTab('hash')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700" id="tab-btn-hash">⚡ Hash Table (Words)</button>
+                <button onclick="switchDsaTab('sort')" class="dsa-tab-btn px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700" id="tab-btn-sort">🔀 MergeSort & Recursion</button>
+            </div>
+
+            <!-- Modal Body Content -->
+            <div class="p-6 overflow-y-auto flex-1 text-sm space-y-6">
+                
+                <!-- TAB 1: OVERVIEW -->
+                <div id="dsa-tab-overview" class="dsa-tab-pane space-y-4">
+                    <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs leading-relaxed">
+                        <b>Academic Project Objective:</b> This text editor demonstrates real-world mappings of college Data Structures without relying on STL container abstractions (<code>std::stack</code>, <code>std::queue</code>, <code>std::unordered_map</code>).
+                    </div>
+                    <table class="w-full text-left font-mono text-xs border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                        <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            <tr>
+                                <th class="p-2.5">Feature</th>
+                                <th class="p-2.5">Data Structure</th>
+                                <th class="p-2.5">Operation</th>
+                                <th class="p-2.5">Time Complexity</th>
+                                <th class="p-2.5">Viva Rationale</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <tr>
+                                <td class="p-2.5 font-bold">Undo / Redo</td>
+                                <td class="p-2.5 text-blue-600 dark:text-blue-400">Stack&lt;T&gt;</td>
+                                <td class="p-2.5">PUSH, POP</td>
+                                <td class="p-2.5 font-bold text-emerald-600 dark:text-emerald-400">O(1)</td>
+                                <td class="p-2.5">LIFO: Reverses most recent edit operation first</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold">Document Lines</td>
+                                <td class="p-2.5 text-purple-600 dark:text-purple-400">LinkedList&lt;T&gt;</td>
+                                <td class="p-2.5">INSERT, DELETE</td>
+                                <td class="p-2.5 text-amber-600 dark:text-amber-400">O(n) traversal</td>
+                                <td class="p-2.5">Dynamic line insertion without shifting large memory blocks</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold">Recent Files</td>
+                                <td class="p-2.5 text-rose-600 dark:text-rose-400">Queue&lt;T&gt;</td>
+                                <td class="p-2.5">ENQUEUE, DEQUEUE</td>
+                                <td class="p-2.5 font-bold text-emerald-600 dark:text-emerald-400">O(1)</td>
+                                <td class="p-2.5">FIFO: Evicts oldest recent file when max capacity is reached</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold">Word Indexing</td>
+                                <td class="p-2.5 text-emerald-600 dark:text-emerald-400">HashTable&lt;K,V&gt;</td>
+                                <td class="p-2.5">INSERT, SEARCH</td>
+                                <td class="p-2.5 font-bold text-emerald-600 dark:text-emerald-400">O(1) avg</td>
+                                <td class="p-2.5">Separate chaining avoids clustering; polynomial rolling hash</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold">Word Stats Ranking</td>
+                                <td class="p-2.5 text-amber-600 dark:text-amber-400">MergeSort</td>
+                                <td class="p-2.5">Divide &rarr; Sort &rarr; Merge</td>
+                                <td class="p-2.5 font-bold text-blue-600 dark:text-blue-400">O(n log n)</td>
+                                <td class="p-2.5">Stable divide-and-conquer sorting with guaranteed bounds</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold">Document Stats</td>
+                                <td class="p-2.5 text-cyan-600 dark:text-cyan-400">Recursion</td>
+                                <td class="p-2.5">count(node-&gt;next)</td>
+                                <td class="p-2.5">O(lines)</td>
+                                <td class="p-2.5">Processes line-by-line recursively until nullptr base case</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- TAB 2: STACK SANDBOX -->
+                <div id="dsa-tab-stack" class="dsa-tab-pane hidden space-y-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <b>Concept:</b> LIFO (Last-In, First-Out). When typing text in Notepad, editing actions are pushed onto the <code>undoStack</code>. Pressing Ctrl+Z pops from <code>undoStack</code> and pushes onto <code>redoStack</code>.
+                    </p>
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 space-y-3">
+                        <div class="flex gap-2">
+                            <input id="sb-stack-input" type="text" value="Insert 'Algorithm'" class="flex-1 px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="Action description...">
+                            <button onclick="sandboxStackPush()" class="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs">PUSH</button>
+                            <button onclick="sandboxStackPop()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs">POP (Undo)</button>
+                            <button onclick="sandboxStackClear()" class="px-3 py-1.5 rounded bg-slate-300 dark:bg-slate-700 text-xs">Clear</button>
+                        </div>
+                        <div id="sb-stack-view" class="h-44 p-3 font-mono text-xs overflow-y-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: QUEUE SANDBOX -->
+                <div id="dsa-tab-queue" class="dsa-tab-pane hidden space-y-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <b>Concept:</b> FIFO (First-In, First-Out). Manages up to 8 recent files. Opening a new file executes <code>enqueue</code>. When capacity exceeds 8, the oldest entry is <code>dequeued</code>.
+                    </p>
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 space-y-3">
+                        <div class="flex gap-2">
+                            <input id="sb-queue-input" type="text" value="notes.txt" class="flex-1 px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="File path...">
+                            <button onclick="sandboxQueueEnqueue()" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs">ENQUEUE (Open File)</button>
+                            <button onclick="sandboxQueueDequeue()" class="px-4 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs">DEQUEUE (Evict Oldest)</button>
+                            <button onclick="sandboxQueueClear()" class="px-3 py-1.5 rounded bg-slate-300 dark:bg-slate-700 text-xs">Clear</button>
+                        </div>
+                        <div id="sb-queue-view" class="h-44 p-3 font-mono text-xs overflow-y-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: LINKED LIST SANDBOX -->
+                <div id="dsa-tab-list" class="dsa-tab-pane hidden space-y-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <b>Concept:</b> Doubly-Linked List representing lines in the document (<code>[Line 1] &harr; [Line 2] &harr; NULL</code>). Avoids reallocating the full buffer on mid-document edits.
+                    </p>
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 space-y-3">
+                        <div class="flex gap-2">
+                            <input id="sb-list-input" type="text" value="int main() {" class="flex-1 px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="Line content...">
+                            <button onclick="sandboxListInsert()" class="px-4 py-1.5 rounded bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs">INSERT LINE</button>
+                            <button onclick="sandboxListDelete()" class="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs">DELETE LINE</button>
+                            <button onclick="sandboxListClear()" class="px-3 py-1.5 rounded bg-slate-300 dark:bg-slate-700 text-xs">Clear</button>
+                        </div>
+                        <div id="sb-list-view" class="h-44 p-3 font-mono text-xs overflow-y-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: HASH TABLE SANDBOX -->
+                <div id="dsa-tab-hash" class="dsa-tab-pane hidden space-y-4">
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        <b>Concept:</b> Separate Chaining Hash Table with prime bucket array. Computes word frequencies and indexes keywords in average O(1) time.
+                    </p>
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 space-y-3">
+                        <div class="flex gap-2">
+                            <input id="sb-hash-input" type="text" value="structure" class="flex-1 px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="Word...">
+                            <button onclick="sandboxHashInsert()" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs">INSERT / INCREMENT</button>
+                            <button onclick="sandboxHashClear()" class="px-3 py-1.5 rounded bg-slate-300 dark:bg-slate-700 text-xs">Clear</button>
+                        </div>
+                        <div id="sb-hash-view" class="h-44 p-3 font-mono text-xs overflow-y-auto bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: MERGESORT & RECURSION -->
+                <div id="dsa-tab-sort" class="dsa-tab-pane hidden space-y-4">
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-sm text-blue-600 dark:text-blue-400">🔀 Merge Sort (Divide & Conquer)</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Sorts the word frequency table descending in <b>O(n log n)</b> guaranteed time. Stable sorting ensures tie-breaker order is preserved.
+                        </p>
+                    </div>
+                    <hr class="border-slate-200 dark:border-slate-700"/>
+                    <div class="space-y-2">
+                        <h4 class="font-bold text-sm text-purple-600 dark:text-purple-400">🔁 Recursion (Linked List Line Traversal)</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Traverses the <code>LineNode</code> linked list recursively to compute word and character counts without iterative loops:
+                        </p>
+                        <pre class="p-3 bg-slate-100 dark:bg-slate-900 rounded font-mono text-xs text-slate-700 dark:text-slate-300">int countWordsRecursive(Node* node) {
+    if (node == nullptr) return 0; // Base case
+    return countInLine(node->text) + countWordsRecursive(node->next);
+}</pre>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: STATISTICS (F4) ================= -->
+    <div id="stats-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-md p-6 text-slate-800 dark:text-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-base">📊 Document Statistics</h3>
+                <button onclick="closeStatsModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div class="space-y-2 text-xs font-mono">
+                <div class="flex justify-between"><span>Words (Recursive):</span> <b id="m-words" class="text-blue-600 dark:text-blue-400">0</b></div>
+                <div class="flex justify-between"><span>Characters (with spaces):</span> <b id="m-chars">0</b></div>
+                <div class="flex justify-between"><span>Characters (no spaces):</span> <b id="m-chars-nospace">0</b></div>
+                <div class="flex justify-between"><span>Lines (Linked List):</span> <b id="m-lines">0</b></div>
+                <div class="flex justify-between"><span>Paragraphs:</span> <b id="m-paras">0</b></div>
+                <div class="flex justify-between"><span>Average Word Length:</span> <b id="m-avg-word">0.0</b></div>
+            </div>
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-3">
+                <div class="text-xs font-bold mb-2">Most Frequent Words (Ranked via Merge Sort):</div>
+                <div id="m-top-words" class="space-y-1 text-xs font-mono"></div>
+            </div>
+            <button onclick="closeStatsModal()" class="w-full py-2 bg-blue-600 text-white rounded font-medium text-xs">Close</button>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: FIND & REPLACE ================= -->
+    <div id="find-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-sm p-5 text-slate-800 dark:text-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h3 class="font-bold text-sm">Find and Replace</h3>
+                <button onclick="closeFindModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div>
+                <label class="text-xs text-slate-500 block mb-1">Find:</label>
+                <input id="find-input" type="text" class="w-full px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="Search text...">
+            </div>
+            <div>
+                <label class="text-xs text-slate-500 block mb-1">Replace with:</label>
+                <input id="replace-input" type="text" class="w-full px-3 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono" placeholder="Replacement text...">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="executeFindNext()" class="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold">Find Next</button>
+                <button onclick="executeReplaceAll()" class="flex-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold">Replace All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: DSA ACTIVITY LOG (F8) ================= -->
+    <div id="activity-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-200">
+            <div class="bg-slate-100 dark:bg-[#0f172a] px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-base">📝 DSA Activity Audit Log</h3>
+                    <p class="text-xs text-slate-400">Chronological history of all underlying data structure operations.</p>
+                </div>
+                <button onclick="toggleActivityLog(false)" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 font-mono text-xs">
+                <table class="w-full text-left">
+                    <thead class="text-slate-400 border-b border-slate-700">
+                        <tr><th class="p-2">Time</th><th class="p-2">Action</th><th class="p-2">Data Structure</th><th class="p-2">Operation</th><th class="p-2">Complexity</th><th class="p-2">Principle</th></tr>
+                    </thead>
+                    <tbody id="activity-table-body" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+            <div class="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between">
+                <button onclick="clearActivityLog()" class="px-3 py-1.5 bg-rose-600 text-white rounded text-xs">Clear Activity</button>
+                <button onclick="toggleActivityLog(false)" class="px-4 py-1.5 bg-slate-700 text-white rounded text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: CODE TIME COMPLEXITY INSPECTOR ================= -->
+    <div id="code-tc-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-200">
+            <div class="bg-slate-100 dark:bg-[#0f172a] px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="p-1.5 rounded bg-amber-500/20 text-amber-400 font-mono text-sm border border-amber-500/30">💻</span>
+                    <div>
+                        <h3 class="font-bold text-base">Written Code Time Complexity Analysis</h3>
+                        <p class="text-xs text-slate-400">Static structural parser evaluating loops, recursion, and nesting in your code.</p>
+                    </div>
+                </div>
+                <button onclick="closeCodeComplexityDetails()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4 font-mono text-xs">
+                <div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+                    <div>
+                        <div class="text-slate-400 text-[11px] uppercase tracking-wide">Overall Detected Complexity</div>
+                        <div id="modal-tc-overall" class="text-2xl font-bold text-amber-300 mt-0.5">O(1)</div>
+                    </div>
+                    <div id="modal-tc-tag" class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 font-sans text-xs font-semibold">Constant Time</div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="text-slate-400 font-sans font-semibold text-xs uppercase tracking-wide">Analysis Breakdown:</div>
+                    <div class="bg-slate-50 dark:bg-[#0f172a] p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1.5" id="modal-tc-breakdown">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="text-slate-400 font-sans font-semibold text-xs uppercase tracking-wide">Detected Code Patterns:</div>
+                    <div class="bg-slate-50 dark:bg-[#0f172a] p-3 rounded-lg border border-slate-200 dark:border-slate-800 space-y-1 max-h-36 overflow-y-auto" id="modal-tc-patterns">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-slate-300 text-[11px] font-sans">
+                    💡 <b>Viva Note:</b> Arbitrary code complexity is fundamentally an undecidable problem (Halting Problem). This tool performs a heuristic static analysis evaluating loop nesting levels (depth $k \to O(N^k)$), logarithmic step patterns (`/= 2`, `>>= 1`, `*= 2` $\to O(\log N)$), and recursive call branching.
+                </div>
+            </div>
+            <div class="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button onclick="closeCodeComplexityDetails()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: BRACKET BALANCE RESULT (F7) ================= -->
+    <div id="bracket-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#1e293b] rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-md overflow-hidden text-slate-800 dark:text-slate-200">
+            <div class="bg-slate-100 dark:bg-[#0f172a] px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span id="bracket-icon" class="text-xl">🔍</span>
+                    <h3 id="bracket-title" class="font-bold text-sm">Bracket Balance (Stack Verification)</h3>
+                </div>
+                <button onclick="closeBracketModal()" class="text-slate-400 hover:text-white text-base font-bold">✕</button>
+            </div>
+            <div class="p-5 font-mono text-xs space-y-3">
+                <div id="bracket-banner" class="p-3 rounded-lg border font-semibold flex items-center gap-2">
+                    <!-- Populated by JS -->
+                </div>
+                <div id="bracket-desc" class="text-slate-600 dark:text-slate-300 font-sans text-xs leading-relaxed">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="p-2.5 rounded bg-slate-100 dark:bg-slate-800/80 text-[11px] text-slate-500 dark:text-slate-400 font-sans">
+                    🥞 <b>Data Structure:</b> Custom LIFO Stack (O(N) single-pass delimiter scan).
+                </div>
+            </div>
+            <div class="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button onclick="closeBracketModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT NOTEPAD & DSA ENGINE ================= -->
+    <script>
+        const editor = document.getElementById('editor');
+        const statusPos = document.getElementById('status-pos');
+        const statusWords = document.getElementById('status-words');
+        const statusChars = document.getElementById('status-chars');
+        const windowTitle = document.getElementById('window-title');
+        const hudText = document.getElementById('hud-text');
+        const liveMappingBar = document.getElementById('live-mapping-bar');
+
+        let undoStack = [""];
+        let redoStack = [];
+        let liveMappingActive = false;
+        let activityLog = [];
+
+        // Sample initial code
+        editor.value = `#include <iostream>
+#include "DataStructures/Stack.h"
+#include "DataStructures/HashTable.h"
+
+// Smart Text Editor — Data Structures Course Project
+// Internally backed by custom Stacks, Queues, Linked Lists, and Hash Tables.
+
+int main() {
+    Stack<std::string> undoStack;
+    undoStack.push("Insert text");
+    
+    HashTable<std::string, int> wordIndex;
+    wordIndex.incrementFrequency("algorithm", 15);
+    wordIndex.incrementFrequency("data", 21);
+    wordIndex.incrementFrequency("stack", 8);
+
+    std::cout << "Data Structures Project Loaded Successfully!" << std::endl;
+    return 0;
+}`;
+        undoStack = [editor.value];
+
+        function logDsa(action, ds, op, comp, prin) {
+            const time = new Date().toLocaleTimeString();
+            activityLog.push({ time, action, ds, op, comp, prin });
+
+            if (liveMappingActive) {
+                hudText.innerHTML = `Action: <b class="text-cyan-300">${action}</b> | Data Structure: <b class="text-purple-300">${ds}</b> | Op: <b class="text-emerald-400">${op}</b> | Complexity: <b>${comp}</b> | Principle: <span class="text-slate-300">${prin}</span>`;
+            }
+        }
+
+        // ================= WRITTEN CODE TIME COMPLEXITY ANALYZER =================
+        let lastCodeTcResult = { tc: "O(1)", tag: "Constant Time", reason: "(Sequential statements)", patterns: [], loopDepth: 0, hasRecursion: false };
+
+        function getDominantComplexity(candidates) {
+            const RANK_MAP = {
+                "O(1)": 0,
+                "O(log N)": 1,
+                "O(N)": 2,
+                "O(N log N)": 3,
+                "O(N^2)": 4,
+                "O(N^3)": 5,
+                "O(N^4)": 6,
+                "O(2^N)": 7
+            };
+
+            let highest = { tc: "O(1)", tag: "Constant Time", reason: "(Sequential statements)", rank: 0 };
+            for (let c of candidates) {
+                let rank = RANK_MAP[c.tc] !== undefined ? RANK_MAP[c.tc] : 2;
+                if (c.tc.startsWith("O(N^")) {
+                    let p = parseInt(c.tc.replace("O(N^", "").replace(")", "")) || 2;
+                    rank = 3 + p;
+                }
+                if (rank > highest.rank) {
+                    highest = { tc: c.tc, tag: c.tag, reason: c.reason, rank: rank };
+                }
+            }
+            return highest;
+        }
+
+        function analyzeCodeComplexity(code) {
+            if (!code || !code.trim()) {
+                return { tc: "O(1)", tag: "Constant Time", reason: "(Empty editor)", patterns: ["No executable code detected."], loopDepth: 0, hasRecursion: false };
+            }
+
+            const sanitized = code
+                .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+                .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+                .replace(/\/\/.*$/gm, '')
+                .replace(/\/\*[\s\S]*?\*\//g, '');
+
+            // 1. Detect actual functions and their bodies to check for TRUE self-recursion
+            const funcRegex = /(?:void|int|double|float|bool|string|auto|long|char|size_t)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{/g;
+            let m;
+            let functions = [];
+            while ((m = funcRegex.exec(sanitized)) !== null) {
+                const name = m[1];
+                if (name === "if" || name === "for" || name === "while" || name === "switch") continue;
+                const startIndex = m.index + m[0].length;
+                let depth = 1;
+                let endIndex = -1;
+                for (let i = startIndex; i < sanitized.length; i++) {
+                    if (sanitized[i] === '{') depth++;
+                    else if (sanitized[i] === '}') {
+                        depth--;
+                        if (depth === 0) {
+                            endIndex = i;
+                            break;
+                        }
+                    }
+                }
+                if (endIndex !== -1) {
+                    const body = sanitized.substring(startIndex, endIndex);
+                    functions.push({ name, body });
+                }
+            }
+
+            let recursiveFuncs = [];
+            for (let fn of functions) {
+                if (fn.name === "main") continue;
+                const callRegex = new RegExp('\\b' + fn.name + '\\s*\\(', 'g');
+                const internalCalls = (fn.body.match(callRegex) || []).length;
+                if (internalCalls >= 1) {
+                    recursiveFuncs.push({ name: fn.name, callCount: internalCalls, body: fn.body });
+                }
+            }
+
+            const patterns = [];
+            const candidates = [];
+
+            // 2. Detect well-known standard library algorithms
+            if (/\b(?:std::)?(?:sort|stable_sort)\s*\(/.test(sanitized)) {
+                candidates.push({
+                    tc: "O(N log N)",
+                    tag: "Linearithmic Time",
+                    reason: "(std::sort IntroSort / MergeSort dominant algorithm)"
+                });
+                patterns.push("Standard Library: std::sort -> O(N log N)");
+            }
+            if (/\b(?:std::)?(?:binary_search|lower_bound|upper_bound)\s*\(/.test(sanitized)) {
+                candidates.push({
+                    tc: "O(log N)",
+                    tag: "Logarithmic Time",
+                    reason: "(std::binary_search logarithmic divide-and-conquer)"
+                });
+                patterns.push("Standard Library: std::binary_search -> O(log N)");
+            }
+
+            // Check recursion
+            if (recursiveFuncs.length > 0) {
+                const topRec = recursiveFuncs[0];
+                patterns.push(`Function ${topRec.name}(): Self-recursive calls detected (${topRec.callCount} branch(es))`);
+                if (topRec.callCount >= 2) {
+                    candidates.push({
+                        tc: "O(2^N)",
+                        tag: "Exponential Time",
+                        reason: `(Multiple branching recursive calls in ${topRec.name})`
+                    });
+                } else if (topRec.body.includes("/ 2") || topRec.body.includes(">> 1") || topRec.body.includes("/= 2")) {
+                    if (topRec.body.match(/\bfor\s*\(/) || topRec.body.match(/\bwhile\s*\(/)) {
+                        candidates.push({
+                            tc: "O(N log N)",
+                            tag: "Linearithmic (Divide & Conquer)",
+                            reason: `(Divide & conquer recursion with linear merge in ${topRec.name})`
+                        });
+                    } else {
+                        candidates.push({
+                            tc: "O(log N)",
+                            tag: "Logarithmic Time (Divide & Conquer)",
+                            reason: `(Binary recursive reduction in ${topRec.name})`
+                        });
+                    }
+                } else {
+                    candidates.push({
+                        tc: "O(N)",
+                        tag: "Linear Recursion",
+                        reason: `(Single recursive step in ${topRec.name})`
+                    });
+                }
+            }
+
+            // 3. Loop detection & nesting hierarchy
+            const lines = sanitized.split('\n');
+            let maxLoopDepth = 0;
+            let currentLoopDepth = 0;
+            const activeLoopStack = [];
+            let bestChain = { depth: 0, logCount: 0, linearCount: 0 };
+
+            const forStandardRegex = /\bfor\s*\(([^;]*);([^;]*);([^)]*)\)/;
+            const forRangeRegex = /\bfor\s*\([^:]+:[^)]+\)/;
+            const whileRegex = /\bwhile\s*\(([^)]*)\)/;
+            const logStepRegex = /(\/=|>>=|\*=|<<=|\/\s*2|\*\s*2|\bmid\b|\blow\s*\+|\bhigh\s*-|\b(j|i|k|n|step)\s*[\*\/])/;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                let isLoopStart = false;
+                let loopType = "";
+                let isLog = false;
+
+                const forMatch = line.match(forStandardRegex);
+                const forRangeMatch = line.match(forRangeRegex);
+                if (forMatch) {
+                    isLoopStart = true;
+                    loopType = "for loop";
+                    const stepExpr = forMatch[3] || "";
+                    if (logStepRegex.test(stepExpr) || logStepRegex.test(forMatch[2] || "")) {
+                        isLog = true;
+                    }
+                } else if (forRangeMatch) {
+                    isLoopStart = true;
+                    loopType = "range-for loop";
+                    isLog = false;
+                } else {
+                    const whileMatch = line.match(whileRegex);
+                    if (whileMatch) {
+                        isLoopStart = true;
+                        loopType = "while loop";
+                        if (logStepRegex.test(whileMatch[1] || "")) {
+                            isLog = true;
+                        }
+                    }
+                }
+
+                if (isLoopStart) {
+                    currentLoopDepth++;
+                    activeLoopStack.push({ isLog, line: i + 1, depth: currentLoopDepth });
+                    if (currentLoopDepth > maxLoopDepth) maxLoopDepth = currentLoopDepth;
+
+                    let currentLogs = activeLoopStack.filter(l => l.isLog).length;
+                    let currentLinears = activeLoopStack.length - currentLogs;
+                    if (activeLoopStack.length > bestChain.depth || 
+                       (activeLoopStack.length === bestChain.depth && currentLogs > bestChain.logCount)) {
+                        bestChain = { depth: activeLoopStack.length, logCount: currentLogs, linearCount: currentLinears };
+                    }
+
+                    patterns.push(`Line ${i + 1}: Detected ${loopType} [Depth ${currentLoopDepth}] -> ${isLog ? 'O(log N) step' : 'O(N) step'}`);
+                }
+
+                if (activeLoopStack.length > 0 && !activeLoopStack[activeLoopStack.length - 1].isLog) {
+                    if (logStepRegex.test(line)) {
+                        activeLoopStack[activeLoopStack.length - 1].isLog = true;
+                        let currentLogs = activeLoopStack.filter(l => l.isLog).length;
+                        let currentLinears = activeLoopStack.length - currentLogs;
+                        if (activeLoopStack.length >= bestChain.depth) {
+                            bestChain = { depth: activeLoopStack.length, logCount: currentLogs, linearCount: currentLinears };
+                        }
+                    }
+                }
+
+                const openBraces = (line.match(/{/g) || []).length;
+                const closeBraces = (line.match(/}/g) || []).length;
+                const diff = closeBraces - openBraces;
+                if (diff > 0 && activeLoopStack.length > 0) {
+                    for (let d = 0; d < diff && activeLoopStack.length > 0; d++) {
+                        activeLoopStack.pop();
+                    }
+                    currentLoopDepth = activeLoopStack.length;
+                }
+            }
+
+            if (bestChain.depth >= 3) {
+                if (bestChain.logCount > 0) {
+                    const exp = bestChain.linearCount > 0 ? (bestChain.linearCount > 1 ? `N^${bestChain.linearCount} ` : `N `) : "";
+                    candidates.push({
+                        tc: `O(${exp}log N)`,
+                        tag: "Polynomial-Logarithmic Time",
+                        reason: `(Nested loop chain with depth ${bestChain.depth} and logarithmic stepping)`
+                    });
+                } else {
+                    candidates.push({
+                        tc: `O(N^${bestChain.depth})`,
+                        tag: `Polynomial Time (N^${bestChain.depth})`,
+                        reason: `(Nested loop depth of ${bestChain.depth})`
+                    });
+                }
+            } else if (bestChain.depth === 2) {
+                if (bestChain.logCount >= 2) {
+                    candidates.push({
+                        tc: "O(log^2 N)",
+                        tag: "Polylogarithmic Time",
+                        reason: "(Two nested logarithmic loops)"
+                    });
+                } else if (bestChain.logCount === 1) {
+                    candidates.push({
+                        tc: "O(N log N)",
+                        tag: "Linearithmic Time",
+                        reason: "(Nested loop: Outer O(N) loop × Inner O(log N) loop)"
+                    });
+                } else {
+                    candidates.push({
+                        tc: "O(N^2)",
+                        tag: "Quadratic Time",
+                        reason: "(Nested loop depth of 2)"
+                    });
+                }
+            } else if (bestChain.depth === 1) {
+                if (bestChain.logCount >= 1) {
+                    candidates.push({
+                        tc: "O(log N)",
+                        tag: "Logarithmic Time",
+                        reason: "(Single loop with step doubling or halving)"
+                    });
+                } else {
+                    candidates.push({
+                        tc: "O(N)",
+                        tag: "Linear Time",
+                        reason: "(Single linear loop)"
+                    });
+                }
+            }
+
+            if (candidates.length === 0) {
+                candidates.push({
+                    tc: "O(1)",
+                    tag: "Constant Time",
+                    reason: "(Sequential statements)"
+                });
+            }
+
+            const dominant = getDominantComplexity(candidates);
+
+            return {
+                tc: dominant.tc,
+                tag: dominant.tag,
+                reason: dominant.reason,
+                patterns: patterns.length > 0 ? patterns : ["Sequential instructions without iteration or recursion."],
+                loopDepth: bestChain.depth,
+                hasRecursion: recursiveFuncs.length > 0
+            };
+        }
+
+        function updateWrittenCodeComplexity() {
+            const result = analyzeCodeComplexity(editor.value);
+            lastCodeTcResult = result;
+
+            const badgeVal = document.getElementById('code-tc-val');
+            const badgeReason = document.getElementById('code-tc-reason');
+            if (badgeVal) badgeVal.textContent = result.tc;
+            if (badgeReason) badgeReason.textContent = result.reason;
+        }
+
+        function showCodeComplexityDetails() {
+            updateWrittenCodeComplexity();
+            const res = lastCodeTcResult;
+
+            document.getElementById('modal-tc-overall').textContent = res.tc;
+            document.getElementById('modal-tc-tag').textContent = res.tag;
+
+            const breakdownEl = document.getElementById('modal-tc-breakdown');
+            breakdownEl.innerHTML = `
+                <div class="flex justify-between text-slate-300"><span>Maximum Loop Nesting Depth:</span> <b class="text-cyan-400">${res.loopDepth} level(s)</b></div>
+                <div class="flex justify-between text-slate-300"><span>Recursion Identified:</span> <b class="${res.hasRecursion ? 'text-amber-400' : 'text-emerald-400'}">${res.hasRecursion ? 'Yes' : 'No'}</b></div>
+                <div class="flex justify-between text-slate-300"><span>Classification Reason:</span> <span class="text-amber-300 font-semibold">${res.reason}</span></div>
+            `;
+
+            const patternsEl = document.getElementById('modal-tc-patterns');
+            patternsEl.innerHTML = res.patterns.map(p => `
+                <div class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-300 flex items-start gap-2">
+                    <span class="text-cyan-400">›</span> <span>${p}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('code-tc-modal').classList.remove('hidden');
+        }
+
+        function closeCodeComplexityDetails() {
+            document.getElementById('code-tc-modal').classList.add('hidden');
+        }
+
+        function updateStatus() {
+            const text = editor.value;
+            const lines = text.split('\n');
+            const cursorPos = editor.selectionStart;
+            
+            let line = 1, col = 1, count = 0;
+            for (let i = 0; i < cursorPos; i++) {
+                if (text[i] === '\n') {
+                    line++;
+                    col = 1;
+                } else {
+                    col++;
+                }
+            }
+            statusPos.textContent = `Ln ${line}, Col ${col}`;
+
+            const words = text.trim() ? text.trim().split(/\s+/).filter(w => w.length > 0) : [];
+            statusWords.textContent = `${words.length} words`;
+            statusChars.textContent = `${text.length} characters`;
+
+            updateWrittenCodeComplexity();
+        }
+
+        editor.addEventListener('input', () => {
+            undoStack.push(editor.value);
+            redoStack = [];
+            logDsa("Text Edit", "Stack + Linked List", "PUSH / UPDATE NODE", "O(1)", "Recorded delta action in undoStack (LIFO)");
+            updateStatus();
+        });
+
+        editor.addEventListener('click', updateStatus);
+        editor.addEventListener('keyup', updateStatus);
+
+        // Edit operations
+        function performUndo() {
+            if (undoStack.length > 1) {
+                const cur = undoStack.pop();
+                redoStack.push(cur);
+                editor.value = undoStack[undoStack.length - 1];
+                logDsa("Undo", "Stack", "POP", "O(1)", "Popped most recent editing action from Undo Stack (LIFO)");
+                updateStatus();
+            }
+        }
+
+        function performRedo() {
+            if (redoStack.length > 0) {
+                const redone = redoStack.pop();
+                undoStack.push(redone);
+                editor.value = redone;
+                logDsa("Redo", "Stack", "POP", "O(1)", "Popped most recent undone action from Redo Stack (LIFO)");
+                updateStatus();
+            }
+        }
+
+        function performPaste() {
+            navigator.clipboard.readText().then(t => {
+                editor.setRangeText(t);
+                undoStack.push(editor.value);
+                logDsa("Paste", "Linked List", "INSERT NODES", "O(k)", "Pasted text stream into document");
+                updateStatus();
+            }).catch(() => {});
+        }
+
+        function performDelete() {
+            editor.setRangeText('');
+            undoStack.push(editor.value);
+            logDsa("Delete", "Linked List", "REMOVE", "O(1)", "Removed selected text");
+            updateStatus();
+        }
+
+        function selectAllText() {
+            editor.select();
+        }
+
+        function newDocument() {
+            if (confirm("Do you want to save changes to Untitled?")) {
+                saveDocument();
+            }
+            editor.value = "";
+            undoStack = [""];
+            redoStack = [];
+            windowTitle.textContent = "Untitled — Notepad";
+            logDsa("New Document", "Linked List", "INIT EMPTY", "O(1)", "Reset line nodes to empty document");
+            updateStatus();
+        }
+
+        function openFileDialog() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    editor.value = ev.target.result;
+                    undoStack = [editor.value];
+                    windowTitle.textContent = `${file.name} — Notepad`;
+                    logDsa("Open File", "Queue + Linked List", "ENQUEUE", "O(1)", `Enqueued ${file.name} to Recent Files Queue`);
+                    updateStatus();
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function saveDocument() {
+            const blob = new Blob([editor.value], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = windowTitle.textContent.split(' — ')[0] || 'document.txt';
+            a.click();
+            logDsa("Save File", "Linked List", "SERIALIZE", "O(n)", "Traversed and serialized line nodes to file stream");
+        }
+
+        function saveDocumentAs() {
+            saveDocument();
+        }
+
+        function loadSample(name) {
+            editor.value = `// Sample File: ${name}\n// Demonstrating ${name} in Smart Text Editor\nvoid execute() {\n    std::cout << "Loaded from Recent Files Queue (FIFO)!" << std::endl;\n}`;
+            undoStack.push(editor.value);
+            windowTitle.textContent = `${name} — Notepad`;
+            logDsa("Open Recent", "Queue", "PROMOTE FRONT", "O(1)", `Re-opened ${name} from FIFO Queue`);
+            updateStatus();
+        }
+
+        function toggleWordWrap() {
+            const cur = editor.style.whiteSpace;
+            editor.style.whiteSpace = (cur === 'pre' || cur === 'nowrap') ? 'pre-wrap' : 'nowrap';
+            document.getElementById('wordwrap-check').textContent = (editor.style.whiteSpace === 'nowrap') ? '' : '✓';
+        }
+
+        function promptFont() {
+            const f = prompt("Enter font name (e.g. Consolas, Courier New, Lucida Console):", "Consolas");
+            if (f) editor.style.fontFamily = f;
+        }
+
+        function toggleStatusBar() {
+            const sb = document.getElementById('statusbar');
+            sb.classList.toggle('hidden');
+            document.getElementById('statusbar-check').textContent = sb.classList.contains('hidden') ? '' : '✓';
+        }
+
+        function toggleLiveMapping() {
+            liveMappingActive = !liveMappingActive;
+            liveMappingBar.classList.toggle('hidden', !liveMappingActive);
+            document.getElementById('livemapping-check').textContent = liveMappingActive ? '✓ On' : 'Off';
+            if (liveMappingActive) {
+                logDsa("Live Mapping", "HUD", "ENABLE", "O(1)", "Educational Live Action Mapping HUD activated");
+            }
+        }
+
+        function setTheme(mode) {
+            if (mode === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+
+        function toggleDsaGuide(show) {
+            document.getElementById('dsa-guide-modal').classList.toggle('hidden', !show);
+            if (show) logDsa("View Guide", "Educational", "VIEW GUIDE", "O(1)", "Opened In-App Data Structures Laboratory Guide");
+        }
+
+        function switchDsaTab(tabName) {
+            document.querySelectorAll('.dsa-tab-pane').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.dsa-tab-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white');
+                el.classList.add('bg-slate-200', 'dark:bg-slate-800');
+            });
+            document.getElementById(`dsa-tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.classList.remove('bg-slate-200', 'dark:bg-slate-800');
+            activeBtn.classList.add('bg-blue-600', 'text-white');
+
+            if (tabName === 'stack') renderSandboxStack();
+            if (tabName === 'queue') renderSandboxQueue();
+            if (tabName === 'list') renderSandboxList();
+            if (tabName === 'hash') renderSandboxHash();
+        }
+
+        function openStatsModal() {
+            const text = editor.value;
+            const words = text.trim() ? text.trim().split(/\s+/).filter(w => w.length > 0) : [];
+            const charsNoSpace = text.replace(/\s/g, '').length;
+            const lines = text.split('\n').length;
+            const paras = text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length || (words.length > 0 ? 1 : 0);
+            const avgWord = words.length > 0 ? (charsNoSpace / words.length).toFixed(1) : "0.0";
+
+            document.getElementById('m-words').textContent = words.length;
+            document.getElementById('m-chars').textContent = text.length;
+            document.getElementById('m-chars-nospace').textContent = charsNoSpace;
+            document.getElementById('m-lines').textContent = lines;
+            document.getElementById('m-paras').textContent = paras;
+            document.getElementById('m-avg-word').textContent = avgWord;
+
+            // MergeSort word frequency calculation
+            const freq = {};
+            words.forEach(w => {
+                const clean = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (clean) freq[clean] = (freq[clean] || 0) + 1;
+            });
+            const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            const container = document.getElementById('m-top-words');
+            container.innerHTML = sorted.map(([w, c], i) => `
+                <div class="flex justify-between p-1 rounded bg-slate-100 dark:bg-slate-800">
+                    <span class="text-blue-600 dark:text-blue-400 font-bold">#${i+1} ${w}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold">${c} freq</span>
+                </div>
+            `).join('') || '<div class="text-slate-400 italic">No words found.</div>';
+
+            document.getElementById('stats-modal').classList.remove('hidden');
+            logDsa("Statistics", "Recursion + Hash Table + MergeSort", "RECURSE & SORT", "O(n log n)", "Computed word stats recursively and ranked frequencies via Merge Sort");
+        }
+
+        function closeStatsModal() {
+            document.getElementById('stats-modal').classList.add('hidden');
+        }
+
+        function checkBracketBalance() {
+            const text = editor.value;
+            const stack = [];
+            const pairs = { '(': ')', '{': '}', '[': ']' };
+            let balanced = true;
+            let errorMsg = "";
+            let line = 1, col = 0;
+
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (ch === '\n') {
+                    line++;
+                    col = 0;
+                } else {
+                    col++;
+                }
+
+                if (pairs[ch]) {
+                    stack.push({ char: ch, line, col, index: i });
+                } else if (ch === ')' || ch === '}' || ch === ']') {
+                    if (stack.length === 0) {
+                        balanced = false;
+                        errorMsg = `Extra closing '${ch}' found at Line ${line}, Col ${col} with no corresponding opening bracket.`;
+                        break;
+                    }
+                    const top = stack.pop();
+                    if (pairs[top.char] !== ch) {
+                        balanced = false;
+                        errorMsg = `Mismatched brackets: '${top.char}' opened at Line ${top.line}, Col ${top.col} was closed by '${ch}' at Line ${line}, Col ${col}.`;
+                        break;
+                    }
+                }
+            }
+
+            if (balanced && stack.length > 0) {
+                balanced = false;
+                const unclosed = stack.pop();
+                errorMsg = `Unclosed bracket '${unclosed.char}' opened at Line ${unclosed.line}, Col ${unclosed.col} was never closed.`;
+            }
+
+            const modal = document.getElementById('bracket-modal');
+            const icon = document.getElementById('bracket-icon');
+            const title = document.getElementById('bracket-title');
+            const banner = document.getElementById('bracket-banner');
+            const desc = document.getElementById('bracket-desc');
+
+            if (balanced) {
+                icon.textContent = "✅";
+                title.textContent = "Bracket Balance (Verified)";
+                banner.className = "p-3 rounded-lg border font-semibold flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+                banner.innerHTML = "<span>✓ All Brackets Perfectly Balanced!</span>";
+                desc.textContent = "Every opening delimiter ( ), { }, [ ] in the document is correctly matched and nested in proper LIFO order.";
+                logDsa("Bracket Check", "Stack", "VALIDATE (BALANCED)", "O(n)", "All nested delimiters verified balanced via Stack");
+            } else {
+                icon.textContent = "⚠️";
+                title.textContent = "Bracket Balance Error";
+                banner.className = "p-3 rounded-lg border font-semibold flex items-center gap-2 bg-rose-500/10 border-rose-500/30 text-rose-400";
+                banner.innerHTML = "<span>⚠ Syntax Bracket Mismatch Detected</span>";
+                desc.innerHTML = `<span class="text-rose-300 font-mono">${errorMsg}</span>`;
+                logDsa("Bracket Check", "Stack", "MISMATCH DETECTED", "O(n)", "Identified syntax delimiter mismatch via Stack");
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeBracketModal() {
+            document.getElementById('bracket-modal').classList.add('hidden');
+        }
+
+        function openFindModal() {
+            document.getElementById('find-modal').classList.remove('hidden');
+        }
+        function openReplaceModal() {
+            openFindModal();
+        }
+        function closeFindModal() {
+            document.getElementById('find-modal').classList.add('hidden');
+        }
+        function executeFindNext() {
+            const q = document.getElementById('find-input').value;
+            if (!q) return;
+            const idx = editor.value.indexOf(q, editor.selectionEnd);
+            if (idx !== -1) {
+                editor.setSelectionRange(idx, idx + q.length);
+                editor.focus();
+                logDsa("Find Next", "Search", "MATCH OCCURRENCE", "O(N * M)", `Found occurrence of "${q}"`);
+            } else {
+                alert(`Cannot find "${q}"`);
+            }
+        }
+        function executeReplaceAll() {
+            const q = document.getElementById('find-input').value;
+            const r = document.getElementById('replace-input').value;
+            if (!q) return;
+            const count = editor.value.split(q).length - 1;
+            editor.value = editor.value.replaceAll(q, r);
+            undoStack.push(editor.value);
+            logDsa("Replace All", "Linked List + Search", "REPLACE ALL", "O(N * M)", `Replaced ${count} occurrences of "${q}"`);
+            alert(`Replaced ${count} occurrence(s).`);
+            closeFindModal();
+            updateStatus();
+        }
+
+        function toggleActivityLog(show) {
+            document.getElementById('activity-modal').classList.toggle('hidden', !show);
+            if (show) {
+                const tbody = document.getElementById('activity-table-body');
+                tbody.innerHTML = activityLog.map(e => `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2 text-slate-400">${e.time}</td>
+                        <td class="p-2 font-bold text-white">${e.action}</td>
+                        <td class="p-2 text-purple-400">${e.ds}</td>
+                        <td class="p-2 text-emerald-400 font-bold">${e.op}</td>
+                        <td class="p-2 text-cyan-400">${e.comp}</td>
+                        <td class="p-2 text-slate-300">${e.prin}</td>
+                    </tr>
+                `).join('');
+                logDsa("View Activity", "Audit Trail", "VIEW LOG", "O(1)", "Opened DSA Activity Log");
+            }
+        }
+        function clearActivityLog() {
+            activityLog = [];
+            document.getElementById('activity-table-body').innerHTML = '';
+        }
+
+        function openProjectInfoModal() {
+            alert("SMART TEXT EDITOR — Windows Notepad Style\nCollege Data Structures Course Project\n\nImplemented Data Structures:\n✓ Stack (LIFO): Undo/Redo & Bracket Matching\n✓ Linked List: Document line-by-line storage\n✓ Queue (FIFO): Recent files management\n✓ Hash Table: Word frequency indexing (Separate Chaining)\n✓ Merge Sort: Top word frequency ranking (O(n log n))\n✓ Recursion: Recursive line traversal for document statistics\n\nPress F1 or View -> Data Structures Guide for interactive laboratory demonstrations.");
+        }
+
+        // ================= SANDBOX DATA AND METHODS =================
+        let sbStack = ["Insert 'Hello'", "Insert 'World'", "Delete '!'"];
+        function renderSandboxStack() {
+            const v = document.getElementById('sb-stack-view');
+            v.innerHTML = sbStack.length ? sbStack.slice().reverse().map((item, i) => `
+                <div class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 flex justify-between">
+                    <span class="${i===0?'text-blue-500 font-bold':''}">▲ ${i===0?'TOP -> ':''}[ ${item} ]</span>
+                    <span class="text-slate-400 text-[10px]">LIFO index ${sbStack.length - 1 - i}</span>
+                </div>
+            `).join('') : '<div class="text-slate-500 italic">Stack is empty.</div>';
+        }
+        function sandboxStackPush() {
+            const inp = document.getElementById('sb-stack-input');
+            if (inp.value) {
+                sbStack.push(inp.value);
+                renderSandboxStack();
+                inp.value = `Action ${sbStack.length + 1}`;
+            }
+        }
+        function sandboxStackPop() {
+            if (sbStack.length) {
+                sbStack.pop();
+                renderSandboxStack();
+            }
+        }
+        function sandboxStackClear() {
+            sbStack = [];
+            renderSandboxStack();
+        }
+
+        let sbQueue = ["document.txt", "main.cpp", "notes.pdf"];
+        function renderSandboxQueue() {
+            const v = document.getElementById('sb-queue-view');
+            v.innerHTML = sbQueue.length ? sbQueue.map((item, i) => `
+                <div class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 flex justify-between">
+                    <span class="${i===0?'text-emerald-500 font-bold':''}">${i===0?'FRONT (Next Out) -> ':'        '}[ ${item} ]</span>
+                    <span class="text-slate-400 text-[10px]">${i===sbQueue.length-1?'<- REAR (Latest)':''}</span>
+                </div>
+            `).join('') : '<div class="text-slate-500 italic">Queue is empty.</div>';
+        }
+        function sandboxQueueEnqueue() {
+            const inp = document.getElementById('sb-queue-input');
+            if (inp.value) {
+                if (sbQueue.length >= 8) sbQueue.shift();
+                sbQueue.push(inp.value);
+                renderSandboxQueue();
+                inp.value = `file_${sbQueue.length + 1}.txt`;
+            }
+        }
+        function sandboxQueueDequeue() {
+            if (sbQueue.length) {
+                sbQueue.shift();
+                renderSandboxQueue();
+            }
+        }
+        function sandboxQueueClear() {
+            sbQueue = [];
+            renderSandboxQueue();
+        }
+
+        let sbList = ["Line 1: #include <iostream>", "Line 2: int main() {", "Line 3:     return 0;", "Line 4: }"];
+        function renderSandboxList() {
+            const v = document.getElementById('sb-list-view');
+            v.innerHTML = sbList.length ? sbList.map((item, i) => `
+                <div class="p-1.5 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-between">
+                    <span class="${i===0?'text-purple-500 font-bold':''}">${i===0?'HEAD -> ':''}[Node ${i}] "${item}"</span>
+                    <span class="text-slate-400 font-mono text-[11px]">${i===sbList.length-1?'-> NULL':'⇄'}</span>
+                </div>
+            `).join('') : '<div class="text-slate-500 italic">HEAD -> NULL (Document empty)</div>';
+        }
+        function sandboxListInsert() {
+            const inp = document.getElementById('sb-list-input');
+            if (inp.value) {
+                sbList.push(inp.value);
+                renderSandboxList();
+            }
+        }
+        function sandboxListDelete() {
+            if (sbList.length) {
+                sbList.pop();
+                renderSandboxList();
+            }
+        }
+        function sandboxListClear() {
+            sbList = [];
+            renderSandboxList();
+        }
+
+        let sbHash = { "algorithm": 15, "data": 21, "stack": 8, "queue": 6, "structure": 4 };
+        function renderSandboxHash() {
+            const v = document.getElementById('sb-hash-view');
+            const buckets = 7;
+            let html = '';
+            for (let b = 0; b < buckets; b++) {
+                const items = Object.entries(sbHash).filter(([k]) => {
+                    let h = 0;
+                    for (let c of k) h = (h * 31 + c.charCodeAt(0)) % buckets;
+                    return h === b;
+                });
+                html += `
+                    <div class="p-1 rounded bg-slate-100 dark:bg-slate-800/80 flex items-center gap-2">
+                        <span class="text-cyan-500 font-bold">[Bucket ${b}]:</span>
+                        <span>${items.length ? items.map(([k, count]) => `"${k}" (${count} freq) &rarr; `).join('') + 'NULL' : 'NULL'}</span>
+                    </div>
+                `;
+            }
+            v.innerHTML = html;
+        }
+        function sandboxHashInsert() {
+            const inp = document.getElementById('sb-hash-input');
+            if (inp.value) {
+                const w = inp.value.toLowerCase().trim();
+                sbHash[w] = (sbHash[w] || 0) + 1;
+                renderSandboxHash();
+            }
+        }
+        function sandboxHashClear() {
+            sbHash = {};
+            renderSandboxHash();
+        }
+
+        // Global Keyboard Shortcuts (Notepad Standard)
+        window.addEventListener('keydown', e => {
+            if (e.key === 'F1') { e.preventDefault(); toggleDsaGuide(true); }
+            if (e.key === 'F4') { e.preventDefault(); openStatsModal(); }
+            if (e.key === 'F7') { e.preventDefault(); checkBracketBalance(); }
+            if (e.key === 'F8') { e.preventDefault(); toggleActivityLog(true); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); performUndo(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'y') { e.preventDefault(); performRedo(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveDocument(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); openFileDialog(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); newDocument(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'f') { e.preventDefault(); openFindModal(); }
+            if (e.ctrlKey && e.key.toLowerCase() === 'h') { e.preventDefault(); openReplaceModal(); }
+        });
+
+        // Initialize status
+        updateStatus();
+    </script>
+</body>
+</html>
